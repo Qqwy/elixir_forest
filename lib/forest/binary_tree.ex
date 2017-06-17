@@ -57,14 +57,14 @@ defmodule Forest.BinaryTree do
   def add_left(tree = %__MODULE__{}, value) do
     tree
     |> Map.put(:left, new(value))
-    |> Map.update!(:size, fn size -> size + 1 end)
+    |> Map.put(:size, if(tree.left, do: tree.size, else: tree.size + 1))
   end
 
   @spec add_right(t(val), val) :: t(val)
   def add_right(tree = %__MODULE__{}, value) do
     tree
     |> Map.put(:right, new(value))
-    |> Map.update!(:size, fn size -> size + 1 end)
+    |> Map.put(:size, if(tree.right, do: tree.size, else: tree.size + 1))
   end
 
   @spec add_subtree_left(t(val), t(val)) :: t(val)
@@ -80,9 +80,9 @@ defmodule Forest.BinaryTree do
   @spec add_subtree_right(t(val), t(val)) :: t(val)
   def add_subtree_right(tree = %__MODULE__{}, subtree = %__MODULE__{}) do
     size =
-      case tree.left do
+      case tree.right do
         nil -> tree.size
-        left -> tree.size - left.size
+        right -> tree.size - right.size
       end
     %__MODULE__{tree | right: subtree, size: size + subtree.size}
   end

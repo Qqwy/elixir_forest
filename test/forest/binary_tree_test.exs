@@ -16,6 +16,16 @@ defmodule Forest.BinaryTreeTest do
       |> BinaryTree.add_left(2)
       |> BinaryTree.size
     assert res == 2
+
+    assert BinaryTree.size(simple_tree()) == 4
+  end
+
+  test "left/1" do
+    assert BinaryTree.left(simple_tree()) == {:ok, BinaryTree.new(2)}
+  end
+
+  test "right/1" do
+    assert BinaryTree.right(simple_tree()) == {:ok, (BinaryTree.new(3) |> BinaryTree.add_left(4))}
   end
 
   test "access behaviour" do
