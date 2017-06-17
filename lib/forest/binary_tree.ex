@@ -67,7 +67,26 @@ defmodule Forest.BinaryTree do
     |> Map.update!(:size, fn size -> size + 1 end)
   end
 
-  # @spec pre_order_map(t(vala :: any), (vala :: any -> valb :: any)) :: t(valb)
+  @spec add_subtree_left(t(val), t(val)) :: t(val)
+  def add_subtree_left(tree = %__MODULE__{}, subtree = %__MODULE__{}) do
+    size =
+      case tree.left do
+        nil -> tree.size
+        left -> tree.size - left.size
+      end
+    %__MODULE__{tree | left: subtree, size: size + subtree.size}
+  end
+
+  @spec add_subtree_right(t(val), t(val)) :: t(val)
+  def add_subtree_right(tree = %__MODULE__{}, subtree = %__MODULE__{}) do
+    size =
+      case tree.left do
+        nil -> tree.size
+        left -> tree.size - left.size
+      end
+    %__MODULE__{tree | right: subtree, size: size + subtree.size}
+  end
+
   @spec pre_order_map(t(val), (a -> b)) :: t(b) when a: val, b: any
   def pre_order_map(%__MODULE__{left: nil, right: nil, value: value}, function) do
     new(function.(value))
@@ -103,8 +122,8 @@ defmodule Forest.BinaryTree do
   """
   @spec fetch(t(val), :left | :right) :: {:ok, val} | :error
   def fetch(%__MODULE__{left: nil}, :left), do: :error
-  def fetch(%__MODULE__{left: left}, :left), do: {:ok, left}
   def fetch(%__MODULE__{right: nil}, :right), do: :error
+  def fetch(%__MODULE__{left: left}, :left), do: {:ok, left}
   def fetch(%__MODULE__{right: right}, :right), do: {:ok, right}
   def fetch(%__MODULE__{value: value}, []), do: {:ok, value}
   def fetch(%__MODULE__{left: nil}, [:left | _]), do: :error
@@ -120,7 +139,7 @@ defmodule Forest.BinaryTree do
     end
   end
 
-  def get_and_update(tree = %__MODULE__{value: value}, [], function) when do
+  def get_and_update(tree = %__MODULE__{value: value}, [], function) do
     # value = get(tree, key)
     case function.(value) do
       {get, updated_value} ->
@@ -142,7 +161,7 @@ defmodule Forest.BinaryTree do
       {get, updated_value} ->
         {get, %__MODULE__{tree | right: updated_value}}
       :pop ->
-        {value, nil}
+        {right, nil}
       other ->
         raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
     end
@@ -152,7 +171,7 @@ defmodule Forest.BinaryTree do
       {get, updated_value} ->
         {get, %__MODULE__{tree | left: updated_value}}
       :pop ->
-        {value, nil}
+        {left, nil}
       other ->
         raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
     end
@@ -174,7 +193,7 @@ defmodule Forest.BinaryTree do
         {default, tree}
       left ->
         {val, updated_left} = pop(left, rest)
-        {val, %__MODULE{left: updated_left}}
+        {val, %__MODULE__{tree | left: updated_left}}
     end
   end
   def pop(tree, [:right | rest], default) do
@@ -183,7 +202,7 @@ defmodule Forest.BinaryTree do
         {default, tree}
       right ->
         {val, updated_right} = pop(right, rest)
-        {val, %__MODULE{right: updated_right}}
+        {val, %__MODULE__{tree | right: updated_right}}
     end
   end
 end
