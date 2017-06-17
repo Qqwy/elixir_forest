@@ -1,0 +1,189 @@
+defmodule Forest.BinaryTree do
+  @moduledoc """
+  A simple Binary Tree.
+
+  Does not follow any special rules for inserting/extracting nodes.
+  Many other types of data structures are built on top of this.
+  """
+
+
+  @type t(val) :: %{left: nil | t(val), right: nil | t(val), value: val}
+  @typep val :: any
+
+  @enforce_keys [:value]
+  defstruct [:value, left: nil, right: nil, size: 1]
+
+  @spec new(val :: any) :: t(val)
+  def new(value) do
+    %__MODULE__{value: value, size: 1}
+  end
+
+  @spec value(t(val)) :: val
+  def value(%__MODULE__{value: value}) do
+    value
+  end
+
+  @spec leaf?(t(any)) :: boolean
+  def leaf?(tree)
+  def leaf?(%__MODULE__{left: nil, right: nil}), do: true
+  def leaf?(%__MODULE__{}), do: false
+
+  @spec size(t(any)) :: non_neg_integer
+  def size(tree = %__MODULE__{}) do
+    tree.size
+  end
+
+  @spec left(t(val)) :: {:ok, val} | {:error, :leaf_node}
+  def left(%__MODULE__{left: nil}), do: {:error, :leaf_node}
+  def left(%__MODULE__{left: left}), do: {:ok, left}
+
+  @spec left!(t(val)) :: t(val)
+  def left!(tree = %__MODULE__{}) do
+    {:ok, left} = left(tree)
+    left
+  end
+
+  @spec right(t(val)) :: {:ok, val} | {:error, :leaf_node}
+  def right(%__MODULE__{right: nil}), do: {:error, :leaf_node}
+  def right(%__MODULE__{right: right}), do: {:ok, right}
+
+  @spec right!(t(val)) :: t(val)
+  def right!(tree = %__MODULE__{}) do
+    {:ok, right} = right(tree)
+    right
+  end
+
+  @spec add_left(t(val), val) :: t(val)
+  def add_left(tree = %__MODULE__{}, value) do
+    tree
+    |> Map.put(:left, new(value))
+    |> Map.update!(:size, fn size -> size + 1 end)
+  end
+
+  @spec add_right(t(val), val) :: t(val)
+  def add_right(tree = %__MODULE__{}, value) do
+    tree
+    |> Map.put(:right, new(value))
+    |> Map.update!(:size, fn size -> size + 1 end)
+  end
+
+  # @spec pre_order_map(t(vala :: any), (vala :: any -> valb :: any)) :: t(valb)
+  @spec pre_order_map(t(val), (a -> b)) :: t(b) when a: val, b: any
+  def pre_order_map(%__MODULE__{left: nil, right: nil, value: value}, function) do
+    new(function.(value))
+  end
+
+  def pre_order_map(%__MODULE__{left: left, right: right, value: value}, function) do
+    %__MODULE__{left: pre_order_map(left, function), value: function.(value), right: pre_order_map(right, function)}
+  end
+
+  @spec in_order_map(t(val), (a -> b)) :: t(b) when a: val, b: any
+  def in_order_map(%__MODULE__{left: nil, right: nil, value: value}, function) do
+    new(function.(value))
+  end
+
+  def in_order_map(%__MODULE__{left: left, right: right, value: value}, function) do
+    %__MODULE__{value: function.(value), left: pre_order_map(left, function), right: pre_order_map(right, function)}
+  end
+
+  @spec post_order_map(t(val), (a -> b)) :: t(b) when a: val, b: any
+  def post_order_map(%__MODULE__{left: nil, right: nil, value: value}, function) do
+    new(function.(value))
+  end
+
+  def post_order_map(%__MODULE__{left: left, right: right, value: value}, function) do
+    %__MODULE__{right: pre_order_map(right, function), value: function.(value, function), left: pre_order_map(left, function)}
+  end
+
+  @doc """
+  Access the left subtree by using `:left`
+  the right subtree by using `:right`,
+  the current value by using `[]` and the value
+  of a node further down using something like: `[:left, :right, :right]`
+  """
+  @spec fetch(t(val), :left | :right) :: {:ok, val} | :error
+  def fetch(%__MODULE__{left: nil}, :left), do: :error
+  def fetch(%__MODULE__{left: left}, :left), do: {:ok, left}
+  def fetch(%__MODULE__{right: nil}, :right), do: :error
+  def fetch(%__MODULE__{right: right}, :right), do: {:ok, right}
+  def fetch(%__MODULE__{value: value}, []), do: {:ok, value}
+  def fetch(%__MODULE__{left: nil}, [:left | _]), do: :error
+  def fetch(%__MODULE__{right: nil}, [:right | _]), do: :error
+  def fetch(%__MODULE__{left: left}, [:left | rest]), do: fetch(left, rest)
+  def fetch(%__MODULE__{right: right}, [:right | rest]), do: fetch(right, rest)
+  def fetch(%__MODULE__{}, _), do: :error
+
+  def get(tree = %__MODULE__{}, key, default \\ nil) do
+    case fetch(tree, key) do
+      {:ok, value} -> value
+      :error       -> default
+    end
+  end
+
+  def get_and_update(tree = %__MODULE__{value: value}, [], function) when do
+    # value = get(tree, key)
+    case function.(value) do
+      {get, updated_value} ->
+        {get, %__MODULE__{tree | value: updated_value}}
+      :pop ->
+        {value, nil}
+      other ->
+        raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
+    end
+  end
+  def get_and_update(tree = %__MODULE__{left: left}, key = [:left | rest], function) do
+    %__MODULE__{tree | left: get_and_update(left, rest, function)}
+  end
+  def get_and_update(tree = %__MODULE__{right: right}, key = [:right | rest], function) do
+    %__MODULE__{tree | right: get_and_update(right, rest, function)}
+  end
+  def get_and_update(tree = %__MODULE__{right: right}, key = :right, function) do
+    case function.(right) do
+      {get, updated_value} ->
+        {get, %__MODULE__{tree | right: updated_value}}
+      :pop ->
+        {value, nil}
+      other ->
+        raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
+    end
+  end
+  def get_and_update(tree = %__MODULE__{left: left}, key = :right, function) do
+    case function.(left) do
+      {get, updated_value} ->
+        {get, %__MODULE__{tree | left: updated_value}}
+      :pop ->
+        {value, nil}
+      other ->
+        raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
+    end
+  end
+
+  def pop(tree, key, default \\ nil)
+  def pop(tree, :left, default) do
+    {tree.left || default, %__MODULE__{tree | left: nil}}
+  end
+  def pop(tree, :right, default) do
+    {tree.right || default, %__MODULE__{tree | right: nil}}
+  end
+  def pop(tree, [], default) do
+    {tree || default, nil}
+  end
+  def pop(tree, [:left | rest], default) do
+    case tree.left do
+      nil ->
+        {default, tree}
+      left ->
+        {val, updated_left} = pop(left, rest)
+        {val, %__MODULE{left: updated_left}}
+    end
+  end
+  def pop(tree, [:right | rest], default) do
+    case tree.right do
+      nil ->
+        {default, tree}
+      right ->
+        {val, updated_right} = pop(right, rest)
+        {val, %__MODULE{right: updated_right}}
+    end
+  end
+end
