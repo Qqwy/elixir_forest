@@ -7,15 +7,15 @@ defmodule Forest.BinaryTree do
   """
 
 
-  @type t(val) :: %{left: nil | t(val), right: nil | t(val), value: val}
+  @type t(val) :: %{left: nil | t(val), right: nil | t(val), value: val, size: pos_integer, height: pos_integer}
   @typep val :: any
 
   @enforce_keys [:value]
-  defstruct [:value, left: nil, right: nil, size: 1]
+  defstruct [:value, left: nil, right: nil, size: 1, height: 1]
 
   @spec new(val :: any) :: t(val)
   def new(value) do
-    %__MODULE__{value: value, size: 1}
+    %__MODULE__{value: value, size: 1, height: 1}
   end
 
   @spec value(t(val)) :: val
@@ -28,9 +28,14 @@ defmodule Forest.BinaryTree do
   def leaf?(%__MODULE__{left: nil, right: nil}), do: true
   def leaf?(%__MODULE__{}), do: false
 
-  @spec size(t(any)) :: non_neg_integer
+  @spec size(t(any)) :: pos_integer
   def size(tree = %__MODULE__{}) do
     tree.size
+  end
+
+  @spec height(t(any)) :: pos_integer
+  def height(tree = %__MODULE__{}) do
+    tree.height
   end
 
   @spec left(t(val)) :: {:ok, val} | {:error, :leaf_node}
@@ -54,37 +59,41 @@ defmodule Forest.BinaryTree do
   end
 
   @spec add_left(t(val), val) :: t(val)
-  def add_left(tree = %__MODULE__{}, value) do
+  def add_left(tree = %__MODULE__{left: left, right: right}, value) do
     tree
     |> Map.put(:left, new(value))
-    |> Map.put(:size, if(tree.left, do: tree.size, else: tree.size + 1))
+    |> Map.put(:size, if(left, do: tree.size, else: tree.size + 1))
+    |> Map.put(:height, max(left[:height] || 0, right[:height] || 0) + 1)
   end
 
   @spec add_right(t(val), val) :: t(val)
-  def add_right(tree = %__MODULE__{}, value) do
+  def add_right(tree = %__MODULE__{left: left, right: right}, value) do
     tree
     |> Map.put(:right, new(value))
-    |> Map.put(:size, if(tree.right, do: tree.size, else: tree.size + 1))
+    |> Map.put(:size, if(right, do: tree.size, else: tree.size + 1))
+    |> Map.put(:height, max(left[:height] || 0, right[:height] || 0) + 1)
   end
 
   @spec add_subtree_left(t(val), t(val)) :: t(val)
-  def add_subtree_left(tree = %__MODULE__{}, subtree = %__MODULE__{}) do
+  def add_subtree_left(tree = %__MODULE__{right: right}, subtree = %__MODULE__{}) do
     size =
       case tree.left do
         nil -> tree.size
         left -> tree.size - left.size
       end
     %__MODULE__{tree | left: subtree, size: size + subtree.size}
+    |> Map.put(:height, max(subtree[:height] || 0, right[:height] || 0) + 1)
   end
 
   @spec add_subtree_right(t(val), t(val)) :: t(val)
-  def add_subtree_right(tree = %__MODULE__{}, subtree = %__MODULE__{}) do
+  def add_subtree_right(tree = %__MODULE__{left: left}, subtree = %__MODULE__{}) do
     size =
       case tree.right do
         nil -> tree.size
         right -> tree.size - right.size
       end
     %__MODULE__{tree | right: subtree, size: size + subtree.size}
+    |> Map.put(:height, max(left[:height] || 0, subtree[:height] || 0) + 1)
   end
 
   @spec pre_order_map(t(val), (a -> b)) :: t(b) when a: val, b: any
