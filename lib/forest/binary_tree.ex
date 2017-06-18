@@ -160,13 +160,13 @@ defmodule Forest.BinaryTree do
         raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
     end
   end
-  def get_and_update(tree = %__MODULE__{left: left}, key = [:left | rest], function) do
+  def get_and_update(tree = %__MODULE__{left: left}, _key = [:left | rest], function) do
     %__MODULE__{tree | left: get_and_update(left, rest, function)}
   end
-  def get_and_update(tree = %__MODULE__{right: right}, key = [:right | rest], function) do
+  def get_and_update(tree = %__MODULE__{right: right}, _key = [:right | rest], function) do
     %__MODULE__{tree | right: get_and_update(right, rest, function)}
   end
-  def get_and_update(tree = %__MODULE__{right: right}, key = :right, function) do
+  def get_and_update(tree = %__MODULE__{right: right}, _key = :right, function) do
     case function.(right) do
       {get, updated_value} ->
         {get, %__MODULE__{tree | right: updated_value}}
@@ -176,7 +176,7 @@ defmodule Forest.BinaryTree do
         raise "the given function must return a two-element tuple or :pop, got: #{inspect(other)}"
     end
   end
-  def get_and_update(tree = %__MODULE__{left: left}, key = :right, function) do
+  def get_and_update(tree = %__MODULE__{left: left}, _key = :left, function) do
     case function.(left) do
       {get, updated_value} ->
         {get, %__MODULE__{tree | left: updated_value}}
