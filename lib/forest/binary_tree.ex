@@ -8,6 +8,7 @@ defmodule Forest.BinaryTree do
 
 
   @type t(val) :: %{left: nil | t(val), right: nil | t(val), value: val, size: pos_integer, height: pos_integer}
+  @type t :: t(any)
   @typep val :: any
 
   @enforce_keys [:value]
